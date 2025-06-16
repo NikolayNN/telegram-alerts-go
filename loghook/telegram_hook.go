@@ -30,7 +30,19 @@ func (h *TelegramHook) Fire(entry *log.Entry) error {
 	if !ok || val != alert.ALERT_VALUE {
 		return nil // нет нужного маркера
 	}
-	msg := fmt.Sprintf("[%s] %s", h.ServiceTag, entry.Message)
+	var emoji string
+	switch entry.Level {
+	case log.InfoLevel:
+		emoji = "\xF0\x9F\x92\x9A" // 💚
+	case log.WarnLevel:
+		emoji = "\xF0\x9F\x92\x9B" // 💛
+	case log.ErrorLevel, log.FatalLevel, log.PanicLevel:
+		emoji = "\xF0\x9F\x92\x94" // 💔
+	}
+	if emoji != "" {
+		emoji += " "
+	}
+	msg := fmt.Sprintf("%s[%s] %s", emoji, h.ServiceTag, entry.Message)
 	return h.Client.SendMessage(msg)
 }
 
