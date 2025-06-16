@@ -28,7 +28,6 @@ import (
     "telegram-alerts-go/alert"
     "telegram-alerts-go/config"
     "telegram-alerts-go/loghook"
-    "telegram-alerts-go/telegram"
 
     "go.uber.org/zap"
 )
@@ -36,19 +35,21 @@ import (
 func main() {
     cfg := config.LoadFromEnv()
 
-    client := telegram.NewClient(cfg.BotToken, cfg.ChannelID)
     logger, _ := zap.NewProduction()
     defer logger.Sync()
 
-    logger = logger.WithOptions(loghook.NewTelegramHook(client, cfg.ServiceName))
+    logger = loghook.AttachToLogger(logger, cfg)
 
     // Regular log message
     logger.Info("Service started")
 
     // Alert log message
-    logger.Error(alert.Prefix("Database is down!"))
+logger.Error(alert.Prefix("Database is down!"))
 }
 ```
+
+`AttachToLogger` checks that the required environment variables are set. If any
+are missing, it logs a warning and disables Telegram forwarding.
 
 ## Environment variables
 

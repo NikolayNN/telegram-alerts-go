@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"telegram-alerts-go/alert"
+	"telegram-alerts-go/config"
 	"telegram-alerts-go/telegram"
 
 	"go.uber.org/zap"
@@ -36,4 +37,17 @@ func NewTelegramHook(client *telegram.Client, serviceTag string) zap.Option {
 		telegramMsg := fmt.Sprintf("%s\n [%s] - %s", serviceTag, emoji, msg)
 		return client.SendMessage(telegramMsg)
 	})
+}
+
+// AttachToLogger checks the configuration and attaches the Telegram hook if all
+// required fields are present. Otherwise it logs a warning listing missing
+// environment variables.
+func AttachToLogger(logger *zap.Logger, cfg *config.Config) *zap.Logger {
+	missing := cfg.MissingFields()
+	if len(missing) == 0 {
+		client := telegram.NewClient(cfg.BotToken, cfg.ChannelID)
+		return logger.WithOptions(NewTelegramHook(client, cfg.ServiceName))
+	}
+	logger.Warn("telegram is not configured", zap.Strings("missing_env", missing))
+	return logger
 }
