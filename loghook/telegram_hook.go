@@ -42,7 +42,7 @@ func (h *TelegramHook) Fire(entry *log.Entry) error {
 	if emoji != "" {
 		emoji += " "
 	}
-	msg := fmt.Sprintf("%s[%s] %s", emoji, h.ServiceTag, entry.Message)
+	msg := fmt.Sprintf("%s\n [%s] - %s", h.ServiceTag, emoji, entry.Message)
 	return h.Client.SendMessage(msg)
 }
 
