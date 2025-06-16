@@ -1,10 +1,8 @@
 package alert
 
-import logger "github.com/sirupsen/logrus"
+const Prefix = "[ALERT] "
 
-const ALERT_MARKER = "ALERT_MARKER"
-const ALERT_VALUE = "TELEGRAM"
-
-func Log() *logger.Entry {
-	return logger.WithField(ALERT_MARKER, ALERT_VALUE)
+// Msg adds the alert prefix to the message.
+func Msg(msg string) string {
+	return Prefix + msg
 }

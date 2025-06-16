@@ -1,26 +1,25 @@
 package main
 
 import (
-	log "github.com/sirupsen/logrus"
 	"telegram-alerts-go/alert"
 	"telegram-alerts-go/config"
 	"telegram-alerts-go/loghook"
 	"telegram-alerts-go/telegram"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func main() {
-
 	cfg := config.LoadFromEnv()
 
 	client := telegram.NewClient(cfg.BotToken, cfg.ChannelID)
-	hook := loghook.NewTelegramHook(client, cfg.ServiceName)
-	log.AddHook(hook)
 
-	log.SetFormatter(&log.TextFormatter{FullTimestamp: true})
+	logger := zap.NewExample()
+	logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
+		return loghook.NewTelegramCore(c, client, cfg.ServiceName)
+	}))
 
-	// Обычный лог
-	log.Info("Service started")
-
-	// АЛЕРТ-лог
-	alert.Log().Error("Test GO Telegram Alert")
+	logger.Info("Service started")
+	logger.Error(alert.Msg("Test GO Telegram Alert"))
 }

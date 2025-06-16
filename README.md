@@ -3,8 +3,8 @@
 This project provides a minimal helper to deliver alert logs from a Go application to a Telegram chat. It exposes:
 
 - **telegram** client for sending messages using the Telegram Bot API
-- **loghook** package with a logrus hook that forwards marked entries
-- **alert** helper that marks log records as alerts
+- **loghook** package with a zap core that forwards prefixed entries
+- **alert** helper that adds a prefix to alert messages
 - **config** loader that reads required settings from environment variables
 - Alert messages are prefixed with an emoji depending on the log level
   (💚 for INFO, 💛 for WARN and 💔 for ERROR)
@@ -19,31 +19,36 @@ This project provides a minimal helper to deliver alert logs from a Go applicati
 cp .env.example .env
 ```
 
-4. Add the Telegram hook to your logrus logger:
+4. Add the Telegram core to your zap logger:
 
 ```go
 package main
 
 import (
-    log "github.com/sirupsen/logrus"
     "telegram-alerts-go/alert"
     "telegram-alerts-go/config"
     "telegram-alerts-go/loghook"
     "telegram-alerts-go/telegram"
+
+    "go.uber.org/zap"
+    "go.uber.org/zap/zapcore"
 )
 
 func main() {
     cfg := config.LoadFromEnv()
 
     client := telegram.NewClient(cfg.BotToken, cfg.ChannelID)
-    hook := loghook.NewTelegramHook(client, cfg.ServiceName)
-    log.AddHook(hook)
+
+    logger := zap.NewExample()
+    logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
+        return loghook.NewTelegramCore(c, client, cfg.ServiceName)
+    }))
 
     // Regular log message
-    log.Info("Service started")
+    logger.Info("Service started")
 
     // Alert log message
-    alert.Log().Error("Database is down!")
+    logger.Error(alert.Msg("Database is down!"))
 }
 ```
 
