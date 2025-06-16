@@ -1,10 +1,9 @@
 package alert
 
-import logger "github.com/sirupsen/logrus"
+// ALERT_PREFIX is added to log messages that should be forwarded to Telegram.
+const ALERT_PREFIX = "[ALERT]"
 
-const ALERT_MARKER = "ALERT_MARKER"
-const ALERT_VALUE = "TELEGRAM"
-
-func Log() *logger.Entry {
-	return logger.WithField(ALERT_MARKER, ALERT_VALUE)
+// Prefix prepends ALERT_PREFIX to the provided message.
+func Prefix(msg string) string {
+	return ALERT_PREFIX + " " + msg
 }
