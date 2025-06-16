@@ -6,6 +6,8 @@ This project provides a minimal helper to deliver alert logs from a Go applicati
 - **loghook** package with a logrus hook that forwards marked entries
 - **alert** helper that marks log records as alerts
 - **config** loader that reads required settings from environment variables
+- Alert messages are prefixed with an emoji depending on the log level
+  (💚 for INFO, 💛 for WARN and 💔 for ERROR)
 
 ## Quick start
 
