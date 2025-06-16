@@ -2,51 +2,38 @@ package loghook
 
 import (
 	"fmt"
-	"telegram-alerts-go/alert"
+	"strings"
 
-	log "github.com/sirupsen/logrus"
+	"telegram-alerts-go/alert"
 	"telegram-alerts-go/telegram"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
-// TelegramHook перехватывает записи logrus и отправляет в Telegram,
-// если marker == "ALERT".
-type TelegramHook struct {
-	Client     *telegram.Client
-	MarkerKey  string
-	ServiceTag string
-}
+// NewTelegramHook returns a zap.Option that forwards log entries with
+// alert prefix to Telegram.
+func NewTelegramHook(client *telegram.Client, serviceTag string) zap.Option {
+	return zap.Hooks(func(entry zapcore.Entry) error {
+		if !strings.HasPrefix(entry.Message, alert.ALERT_PREFIX) {
+			return nil
+		}
+		msg := strings.TrimPrefix(entry.Message, alert.ALERT_PREFIX)
+		msg = strings.TrimSpace(msg)
 
-func NewTelegramHook(client *telegram.Client, serviceTag string) *TelegramHook {
-	return &TelegramHook{
-		Client:     client,
-		MarkerKey:  alert.ALERT_MARKER,
-		ServiceTag: serviceTag,
-	}
-}
-
-// Fire вызывается logrus при каждой записи.
-func (h *TelegramHook) Fire(entry *log.Entry) error {
-	val, ok := entry.Data[h.MarkerKey]
-	if !ok || val != alert.ALERT_VALUE {
-		return nil // нет нужного маркера
-	}
-	var emoji string
-	switch entry.Level {
-	case log.InfoLevel:
-		emoji = "\xF0\x9F\x92\x9A" // 💚
-	case log.WarnLevel:
-		emoji = "\xF0\x9F\x92\x9B" // 💛
-	case log.ErrorLevel, log.FatalLevel, log.PanicLevel:
-		emoji = "\xF0\x9F\x92\x94" // 💔
-	}
-	if emoji != "" {
-		emoji += " "
-	}
-	msg := fmt.Sprintf("%s\n [%s] - %s", h.ServiceTag, emoji, entry.Message)
-	return h.Client.SendMessage(msg)
-}
-
-// Levels указываем, что перехватываем все уровни.
-func (h *TelegramHook) Levels() []log.Level {
-	return log.AllLevels
+		var emoji string
+		switch entry.Level {
+		case zapcore.InfoLevel:
+			emoji = "\xF0\x9F\x92\x9A" // 💚
+		case zapcore.WarnLevel:
+			emoji = "\xF0\x9F\x92\x9B" // 💛
+		case zapcore.ErrorLevel, zapcore.DPanicLevel, zapcore.PanicLevel, zapcore.FatalLevel:
+			emoji = "\xF0\x9F\x92\x94" // 💔
+		}
+		if emoji != "" {
+			emoji += " "
+		}
+		telegramMsg := fmt.Sprintf("%s\n [%s] - %s", serviceTag, emoji, msg)
+		return client.SendMessage(telegramMsg)
+	})
 }
